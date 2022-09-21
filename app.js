@@ -189,7 +189,10 @@ app.use(express.static(__dirname + '/../../public'));
 //-----------------------------------------------------------------------------
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) { return next(); }
+  req.session.returnTo = req.originalUrl;
+  console.log(`1: req.session.returnTo=${req.session.returnTo}`);
   res.redirect('/login');
+
 };
 
 app.get('/', function(req, res) {
@@ -198,9 +201,12 @@ app.get('/', function(req, res) {
 
 // '/account' is only available to logged in user
 app.get('/account', ensureAuthenticated, function(req, res) {
-  console.log(req.user);
+  // console.log(req.authInfo)
+  // `console.log(req.user);
   res.render('account', { user: req.user });
 });
+
+app.get('/meat', ensureAuthenticated, (req, res) => { res.send('MEAT') })
 
 app.get('/login',
   function(req, res, next) {
@@ -233,7 +239,9 @@ app.get('/auth/openid/return',
   },
   function(req, res) {
     log.info('We received a return from AzureAD.');
-    res.redirect('/');
+    console.log(`2: req.session.returnTo=${req.session.returnTo}`);
+    res.redirect(req.session.returnTo || '/');
+    req.session.returnTo = null;
   });
 
 // 'POST returnURL'
@@ -251,7 +259,9 @@ app.post('/auth/openid/return',
   },
   function(req, res) {
     log.info('We received a return from AzureAD.');
-    res.redirect('/');
+    console.log(`3: req.session.returnTo=${req.session.returnTo}`);
+    res.redirect(req.session.returnTo || '/');
+    req.session.returnTo = null;
   });
 
 // 'logout' route, logout from passport, and destroy the session with AAD.
